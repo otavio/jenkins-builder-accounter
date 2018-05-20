@@ -13,6 +13,7 @@ extern crate stderrlog;
 mod build;
 mod credentials;
 mod customer;
+mod job;
 
 use chrono::{Duration, TimeZone, Utc};
 use jenkins_api::JenkinsBuilder;
@@ -31,7 +32,7 @@ fn main() -> Result<(), failure::Error> {
     let customers = customer::Set::load("config/customers.yml")?;
     let job_patterns = customers.job_patterns()?;
 
-    let mut customer_use: BTreeMap<&customer::Info, Vec<build::Info>> = BTreeMap::new();
+    let mut customer_use: BTreeMap<&customer::Info, Vec<job::Info>> = BTreeMap::new();
     for job in jenkins.get_home()?.jobs {
         let customer_id = job_patterns
             .matches(&job.name)
@@ -47,13 +48,12 @@ fn main() -> Result<(), failure::Error> {
         let job = job.get_full_job(&jenkins)?;
         let builds = job.builds()?;
 
-        let mut info: Vec<build::Info> = Vec::new();
+        let mut builds_info: Vec<build::Info> = Vec::new();
         for build in builds
             .iter()
             .map(|build| -> Result<build::Info, failure::Error> {
                 let build = build.get_full_build(&jenkins)?;
                 Ok(build::Info {
-                    job: job.name()?.into(),
                     number: build.number()?,
                     timestamp: Utc.timestamp((build.timestamp()? / 1000) as i64, 0),
                     duration: Duration::milliseconds(i64::from(build.duration()?)),
@@ -61,7 +61,7 @@ fn main() -> Result<(), failure::Error> {
             }) {
             match build {
                 Ok(ref build) if (build.timestamp < Utc::now() - Duration::days(30)) => break,
-                Ok(build) => info.push(build),
+                Ok(build) => builds_info.push(build),
                 Err(e) => {
                     error!("{:?}", e);
                     continue;
@@ -69,19 +69,33 @@ fn main() -> Result<(), failure::Error> {
             };
         }
 
+        let job = job::Info {
+            name: job.name()?.into(),
+            builds: builds_info,
+        };
         customer_use
             .entry(&customer)
-            .and_modify(|e| e.append(&mut info))
-            .or_insert(info);
+            .and_modify(|e| e.push(job.clone()))
+            .or_insert(vec![job]);
     }
 
-    for (customer, builds) in customer_use {
-        println!(
-            "Customer: {}  Total builds: {}  Total duration: {:#?}",
-            customer.name,
-            builds.len(),
-            builds.iter().map(|b| b.duration.num_seconds()).sum::<i64>() / 3600
-        );
+    for (customer, jobs) in customer_use {
+        println!("Customer: {}", customer.name);
+        for job in jobs {
+            if job.builds.is_empty() {
+                continue;
+            }
+
+            println!(
+                " - Job: {}  Total builds: {}  Total duration: {:#?}",
+                job.name,
+                job.builds.len(),
+                job.builds
+                    .iter()
+                    .map(|b| b.duration.num_seconds())
+                    .sum::<i64>() / 3600
+            );
+        }
     }
 
     Ok(())
