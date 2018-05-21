@@ -56,7 +56,11 @@ fn main() -> Result<(), failure::Error> {
                 Ok(build::Info {
                     number: build.number()?,
                     timestamp: Utc.timestamp((build.timestamp()? / 1000) as i64, 0),
-                    duration: Duration::milliseconds(i64::from(build.duration()?)),
+                    duration: {
+                        let mut d = Duration::milliseconds(i64::from(build.duration()?));
+                        d = d + Duration::minutes(15 - (d.num_minutes() % 15));
+                        d
+                    },
                 })
             }) {
             match build {
@@ -87,13 +91,13 @@ fn main() -> Result<(), failure::Error> {
             }
 
             println!(
-                " - Job: {}  Total builds: {}  Total duration: {:#?}",
+                " - Job: {}  Total builds: {}  Total duration: {:.2}",
                 job.name,
                 job.builds.len(),
                 job.builds
                     .iter()
-                    .map(|b| b.duration.num_seconds())
-                    .sum::<i64>() / 3600
+                    .map(|b| b.duration.num_minutes() as f64 / 60.0)
+                    .sum::<f64>()
             );
         }
     }
