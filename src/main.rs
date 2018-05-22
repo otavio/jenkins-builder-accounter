@@ -20,7 +20,7 @@ use jenkins_api::JenkinsBuilder;
 use std::collections::BTreeMap;
 
 fn main() -> Result<(), failure::Error> {
-    stderrlog::new().verbosity(2).init()?;
+    stderrlog::new().verbosity(1).init()?;
 
     info!("Starting Jenkins Builder Accounter");
 
