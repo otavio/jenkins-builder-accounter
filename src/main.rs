@@ -10,10 +10,11 @@ extern crate serde;
 extern crate serde_yaml;
 extern crate stderrlog;
 
-mod build;
-mod credentials;
 mod customer;
-mod job;
+mod jenkins;
+
+use customer::{Customer, CustomerSet};
+use jenkins::{BuildInfo, JobInfo};
 
 use chrono::{Duration, TimeZone, Utc};
 use jenkins_api::JenkinsBuilder;
@@ -24,15 +25,15 @@ fn main() -> Result<(), failure::Error> {
 
     info!("Starting Jenkins Builder Accounter");
 
-    let credentials = credentials::load_credentials_from_env()?;
+    let credentials = jenkins::load_credentials_from_env()?;
     let jenkins = JenkinsBuilder::new(&credentials.server)
         .with_user(&credentials.username, Some(&credentials.password))
         .build()?;
 
-    let customers = customer::Set::load("config/customers.yml")?;
+    let customers = CustomerSet::load("config/customers.yml")?;
     let job_patterns = customers.job_patterns()?;
 
-    let mut customer_use: BTreeMap<&customer::Info, Vec<job::Info>> = BTreeMap::new();
+    let mut customer_use: BTreeMap<&Customer, Vec<JobInfo>> = BTreeMap::new();
     for job in jenkins.get_home()?.jobs {
         let customer_id = job_patterns
             .matches(&job.name)
@@ -46,10 +47,12 @@ fn main() -> Result<(), failure::Error> {
 
         let customer = customers.get(customer_id.unwrap()).unwrap();
         let job = job.get_full_job(&jenkins)?;
-        let builds = job.builds()?.into_iter().map(
-            |build| -> Result<build::Info, failure::Error> {
+        let builds = job
+            .builds()?
+            .into_iter()
+            .map(|build| -> Result<BuildInfo, failure::Error> {
                 let build = build.get_full_build(&jenkins)?;
-                Ok(build::Info {
+                Ok(BuildInfo {
                     number: build.number()?,
                     timestamp: Utc.timestamp((build.timestamp()? / 1000) as i64, 0),
                     duration: {
@@ -58,10 +61,9 @@ fn main() -> Result<(), failure::Error> {
                         d
                     },
                 })
-            },
-        );
+            });
 
-        let mut builds_info: Vec<build::Info> = Vec::new();
+        let mut builds_info: Vec<BuildInfo> = Vec::new();
         for build in builds {
             match build {
                 Ok(b) => {
@@ -79,7 +81,7 @@ fn main() -> Result<(), failure::Error> {
             };
         }
 
-        let job = job::Info {
+        let job = JobInfo {
             name: job.name()?.into(),
             builds: builds_info,
         };
