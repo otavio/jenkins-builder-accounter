@@ -46,12 +46,8 @@ fn main() -> Result<(), failure::Error> {
 
         let customer = customers.get(customer_id.unwrap()).unwrap();
         let job = job.get_full_job(&jenkins)?;
-        let builds = job.builds()?;
-
-        let mut builds_info: Vec<build::Info> = Vec::new();
-        for build in builds
-            .iter()
-            .map(|build| -> Result<build::Info, failure::Error> {
+        let builds = job.builds()?.into_iter().map(
+            |build| -> Result<build::Info, failure::Error> {
                 let build = build.get_full_build(&jenkins)?;
                 Ok(build::Info {
                     number: build.number()?,
@@ -62,10 +58,20 @@ fn main() -> Result<(), failure::Error> {
                         d
                     },
                 })
-            }) {
+            },
+        );
+
+        let mut builds_info: Vec<build::Info> = Vec::new();
+        for build in builds {
             match build {
-                Ok(ref build) if (build.timestamp < Utc::now() - Duration::days(30)) => break,
-                Ok(build) => builds_info.push(build),
+                Ok(b) => {
+                    if b.timestamp < Utc::now() - Duration::days(30) {
+                        break;
+                    }
+
+                    builds_info.push(b)
+                }
+
                 Err(e) => {
                     error!("{:?}", e);
                     continue;
@@ -77,6 +83,7 @@ fn main() -> Result<(), failure::Error> {
             name: job.name()?.into(),
             builds: builds_info,
         };
+
         customer_use
             .entry(&customer)
             .and_modify(|e| e.push(job.clone()))
