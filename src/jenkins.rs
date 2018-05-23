@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use failure::Error;
+use failure::{Error, ResultExt};
 use jenkins_api::{Jenkins, JenkinsBuilder};
 use std::collections::BTreeMap;
 use std::env;
@@ -15,17 +15,18 @@ struct Credentials {
 fn load_credentials_from_env() -> Result<Credentials, Error> {
     debug!("Loading credentials from environment");
     Ok(Credentials {
-        server: env::var("JENKINS_SERVER")?,
-        username: env::var("JENKINS_USER")?,
-        password: env::var("JENKINS_PASSWORD")?,
+        server: env::var("JENKINS_SERVER").context("read JENKINS_SERVER variable")?,
+        username: env::var("JENKINS_USER").context("read JENKINS_USER variable")?,
+        password: env::var("JENKINS_PASSWORD").context("read JENKINS_PASSWORD variable")?,
     })
 }
 
 pub fn connect() -> Result<Jenkins, Error> {
-    let credentials = load_credentials_from_env()?;
+    let credentials = load_credentials_from_env().context("cannot load credentials")?;
     Ok(JenkinsBuilder::new(&credentials.server)
         .with_user(&credentials.username, Some(&credentials.password))
-        .build()?)
+        .build()
+        .context(format!("Fail to connect to server {}", &credentials.server))?)
 }
 
 #[derive(Debug, Clone)]
