@@ -25,11 +25,7 @@ fn run() -> Result<(), Error> {
     let jenkins = jenkins::connect().context("connecting to Jenkins server")?;
     for (customer, jobs) in jenkins::get_jenkins_jobs_for_customers(&jenkins, &customers)? {
         println!("Customer: {}", customer.name);
-        for job in jobs {
-            if job.builds.is_empty() {
-                continue;
-            }
-
+        for job in jobs.iter().filter(|j| !j.builds.is_empty()) {
             println!(
                 " - Job: {}  Total builds: {}  Total duration: {:.2}",
                 job.name,
