@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 
 [dependencies]
-jenkins_api = "0.3.0"
+jenkins_api = "0.4.0"
 failure = "0.1.1"
 log = "0.4.1"
 stderrlog = "0.4.0"
 chrono = "0.4.2"
 serde_yaml = "0.7.4"
-serde_derive = "1.0.53"
-serde = "1.0.53"
+serde_derive = "1.0.62"
+serde = "1.0.62"
 regex = "1.0.0"
 rayon = "1.0.1"

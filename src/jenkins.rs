@@ -62,15 +62,15 @@ pub fn get_jenkins_jobs_for_customers<'a>(
         let customer = customers.get(customer_id.unwrap()).unwrap();
         let job = job.get_full_job(&jenkins)?;
         let builds = job
-            .builds()?
+            .builds
             .into_iter()
             .map(|build| -> Result<BuildInfo, Error> {
                 let build = build.get_full_build(&jenkins)?;
                 Ok(BuildInfo {
-                    number: build.number()?,
-                    timestamp: Utc.timestamp((build.timestamp()? / 1000) as i64, 0),
+                    number: build.number,
+                    timestamp: Utc.timestamp((build.timestamp / 1000) as i64, 0),
                     duration: {
-                        let mut d = Duration::milliseconds(i64::from(build.duration()?));
+                        let mut d = Duration::milliseconds(i64::from(build.duration));
                         d = d + Duration::minutes(15 - (d.num_minutes() % 15));
                         d
                     },
@@ -96,7 +96,7 @@ pub fn get_jenkins_jobs_for_customers<'a>(
         }
 
         let job = JobInfo {
-            name: job.name()?.into(),
+            name: job.name,
             builds: builds_info,
         };
 
