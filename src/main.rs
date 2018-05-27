@@ -24,18 +24,25 @@ fn run() -> Result<(), Error> {
     let customers = CustomerSet::load("config/customers.yml")?;
     let jenkins = jenkins::connect().context("connecting to Jenkins server")?;
     for (customer, jobs) in jenkins::get_jenkins_jobs_for_customers(&jenkins, &customers)? {
-        println!("Customer: {}", customer.name);
+        let mut total_duration = 0.;
+
+        println!("\nCustomer: {}", customer.name);
+        println!("Continous Integration builds:");
         for job in jobs.iter().filter(|j| !j.builds.is_empty()) {
+            let duration = job
+                .builds
+                .iter()
+                .map(|b| b.duration.num_minutes() as f64 / 60.)
+                .sum::<f64>();
             println!(
-                " - Job: {}  Total builds: {}  Total duration: {:.2}",
+                "   - {} Builds: {}  Duration: {:.2}",
                 job.name,
                 job.builds.len(),
-                job.builds
-                    .iter()
-                    .map(|b| b.duration.num_minutes() as f64 / 60.0)
-                    .sum::<f64>()
+                duration,
             );
+            total_duration += duration;
         }
+        println!("Total duration: {}", total_duration);
     }
 
     Ok(())
