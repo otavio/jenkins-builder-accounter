@@ -51,7 +51,9 @@ fn run() -> Result<(), Error> {
 fn main() {
     if let Err(ref e) = run() {
         error!("{}", e);
-        e.causes().skip(1).for_each(|e| error!("  due to: {}", e));
+        e.iter_chain()
+            .skip(1)
+            .for_each(|e| error!("  due to: {}", e));
 
         std::process::exit(1);
     }
