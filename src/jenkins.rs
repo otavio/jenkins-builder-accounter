@@ -4,7 +4,7 @@ use jenkins_api::{Jenkins, JenkinsBuilder};
 use std::collections::BTreeMap;
 use std::env;
 
-use customer::{Customer, CustomerSet};
+use customer::{Customer, Set};
 
 struct Credentials {
     username: String,
@@ -44,7 +44,7 @@ pub struct BuildInfo {
 
 pub fn get_jenkins_jobs_for_customers<'a>(
     jenkins: &Jenkins,
-    customers: &'a CustomerSet,
+    customers: &'a Set,
 ) -> Result<BTreeMap<&'a Customer, Vec<JobInfo>>, Error> {
     let mut customer_use: BTreeMap<&Customer, Vec<JobInfo>> = BTreeMap::new();
     for job in jenkins.get_home()?.jobs {

@@ -11,11 +11,11 @@ pub struct Customer {
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
-pub struct CustomerSet {
+pub struct Set {
     customers: Vec<Customer>,
 }
 
-impl CustomerSet {
+impl Set {
     pub fn load(path: &str) -> Result<Self, Error> {
         let mut content = String::new();
         File::open(path)?.read_to_string(&mut content)?;

@@ -13,7 +13,6 @@ extern crate stderrlog;
 mod customer;
 mod jenkins;
 
-use customer::CustomerSet;
 use failure::{Error, ResultExt};
 
 fn run() -> Result<(), Error> {
@@ -21,7 +20,7 @@ fn run() -> Result<(), Error> {
 
     info!("Starting Jenkins Builder Accounter");
 
-    let customers = CustomerSet::load("config/customers.yml")?;
+    let customers = customer::Set::load("config/customers.yml")?;
     let jenkins = jenkins::connect().context("connecting to Jenkins server")?;
     for (customer, jobs) in jenkins::get_jenkins_jobs_for_customers(&jenkins, &customers)? {
         let mut total_duration = 0.;
