@@ -70,7 +70,7 @@ pub fn get_jenkins_jobs_for_customers<'a>(
                     number: build.number,
                     timestamp: Utc.timestamp((build.timestamp / 1000) as i64, 0),
                     duration: {
-                        let mut d = Duration::milliseconds(i64::from(build.duration));
+                        let mut d = Duration::milliseconds(build.duration);
                         d = d + Duration::minutes(15 - (d.num_minutes() % 15));
                         d
                     },
@@ -103,7 +103,7 @@ pub fn get_jenkins_jobs_for_customers<'a>(
         customer_use
             .entry(customer)
             .and_modify(|e| e.push(job.clone()))
-            .or_insert(vec![job]);
+            .or_insert_with(|| vec![job]);
     }
 
     Ok(customer_use)
