@@ -1,24 +1,21 @@
 use chrono::{DateTime, Duration, TimeZone, Utc};
+use envy;
 use failure::{Error, ResultExt};
 use jenkins_api::{Jenkins, JenkinsBuilder};
 use std::collections::BTreeMap;
-use std::env;
 
 use customer::{Customer, Set};
 
+#[derive(Deserialize)]
 struct Credentials {
     username: String,
     password: String,
     server: String,
 }
 
-fn load_credentials_from_env() -> Result<Credentials, Error> {
+fn load_credentials_from_env() -> Result<Credentials, envy::Error> {
     debug!("Loading credentials from environment");
-    Ok(Credentials {
-        server: env::var("JENKINS_SERVER").context("read JENKINS_SERVER variable")?,
-        username: env::var("JENKINS_USER").context("read JENKINS_USER variable")?,
-        password: env::var("JENKINS_PASSWORD").context("read JENKINS_PASSWORD variable")?,
-    })
+    envy::prefixed("JENKINS_").from_env::<Credentials>()
 }
 
 pub fn connect() -> Result<Jenkins, Error> {
