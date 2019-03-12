@@ -5,7 +5,7 @@ authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 
 [dependencies]
 chrono = "0.4"
-envy = "0.3"
+envy = "0.4"
 failure = "0.1"
 jenkins_api = "0.5"
 log = "0.4"
